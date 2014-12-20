@@ -4,12 +4,11 @@ use warnings;
 use strict;
 use File::Fetch;
 
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 
 my $HOST = $ENV{PKG_PATH};
-my $URI = $HOST."SHA256";
-#my $CACHE_FILE = "$ENV{HOME}/.pkg_search.cache";
-my $CACHE_FILE = "/tmp/$ENV{USER}.pkg_search.cache";
+my $URI = $HOST."/SHA256";
+my $CACHE_FILE = "$ENV{HOME}/.pkg_search.cache";
 
 sub build_cache()
 {
@@ -21,7 +20,7 @@ sub build_cache()
     my @pkg_list;
     foreach my $x (@pkgs)
     {
-        if($x =~ m/\((.*)\)/)
+        if($x =~ m/\(([A-Za-z0-9\.\-_]+?)\)/)
         {
             push (@pkg_list, $1);
         }
@@ -29,31 +28,25 @@ sub build_cache()
     open(my $handle, '>', $CACHE_FILE) or die "Cannot open file '$CACHE_FILE' $!";
     print $handle join("\n", @pkg_list);
     close $handle;
-    print "Finished building cache\n"
 }
 
 sub check_cache(){
     if (-f $CACHE_FILE)
     {
-        my $cache_age = -M $CACHE_FILE; 
-        if ($cache_age >= 1)
+        if ( -M $CACHE_FILE >= 1)
         {
-            print "Cache expired: Rebuilding Cache\n";
             build_cache();
         }
     }
     else
     {
-        print "Building Cache\n";
         build_cache();
     }
 
     open(my $handle, '<', $CACHE_FILE) or die "Cannot open file '$CACHE_FILE' $!";
-    my @cache = <$handle>;
-    my @results = grep { $_ =~ /$ARGV[0]/ } @cache;
+    my @results = grep { $_ =~ /$ARGV[0]/ } <$handle>;
     close $handle;
 
-    print "===== Search Results =====\n";
     foreach my $x (@results)
     {
         print $x =~ s/\.tgz$//r;
